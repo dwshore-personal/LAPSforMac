@@ -174,7 +174,7 @@ if [ "$oldPass" = "" ];then
 else
   ScriptLogging "Updating password for $resetUser."
   echo "Updating password for $resetUser."
-  sysadminctl -adminUser $resetUser -adminPassword $oldPass -resetPasswordFor $resetUser -newPassword $newPass
+  sysadminctl -resetPasswordFor $resetUser -newPassword $newPass
 fi
 }
 
