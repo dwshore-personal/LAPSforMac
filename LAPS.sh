@@ -52,7 +52,7 @@ LogLocation="/private/var/log/$resetUser.log"
 # hardcode full path to jamf binary.
 jamf_binary="/usr/local/bin/jamf"
 
-major_version=$(sw_vers -productVersion | cut -f2 -d".")
+macOS_version=$(sw_vers -productVersion)
 
 ###################Create new Password#######################
 newPass=$(env LC_CTYPE=C tr -dc "A-Za-z0-9#\$^&_+=" < /dev/urandom | head -c 16;echo | echo "Aq1*")
@@ -176,11 +176,18 @@ if [ "$oldPass" = "" ];then
 else
   ScriptLogging "Updating password for $resetUser."
   echo "Updating password for $resetUser."
-  if [[ $major_vesion == "12" ]]; then
-    sysadminctl -resetPasswordFor $resetUser -newPassword $newPass
-  else
-    sysadminctl -adminUser $resetUser -adminPassword $oldPass -resetPasswordFor $resetUser -newPassword $newPass
-  fi
+  
+if [[ $macOS_version == 10.10.* ]]; then
+  $jamf_binary resetPassword -username $resetUser -password $newPass
+elif [[ $macOS_version == 10.11.* ]]; then
+  $jamf_binary resetPassword -username $resetUser -password $newPass
+elif [[ $macOS_version == 10.12.* ]]; then
+   $jamf_binary resetPassword -username $resetUser -password $newPass
+elif [[ $macOS_version == 10.13.* ]]; then #Not sure this is correct!
+   $jamf_binary resetPassword -username $resetUser -password $newPass
+else 
+   sysadminctl -adminUser $resetUser -adminPassword $oldPass -resetPasswordFor $resetUser -newPassword $newPass
+fi
 fi
 }
 
