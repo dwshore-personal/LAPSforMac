@@ -52,6 +52,8 @@ LogLocation="/private/var/log/$resetUser.log"
 # hardcode full path to jamf binary.
 jamf_binary="/usr/local/bin/jamf"
 
+major_version=sw_vers -productVersion | cut -f2 -d"."
+
 ###################Create new Password#######################
 newPass=$(env LC_CTYPE=C tr -dc "A-Za-z0-9#\$^&_+=" < /dev/urandom | head -c 16;echo | echo "Aq1*")
 
@@ -174,7 +176,11 @@ if [ "$oldPass" = "" ];then
 else
   ScriptLogging "Updating password for $resetUser."
   echo "Updating password for $resetUser."
-  sysadminctl -resetPasswordFor $resetUser -newPassword $newPass
+  if [ $major_vesion == "12"; then
+    sysadminctl -resetPasswordFor $resetUser -newPassword $newPass
+  else
+    sysadminctl -adminUser $resetUser -adminPassword $oldPass -resetPasswordFor $resetUser -newPassword $newPass
+  fi
 fi
 }
 
