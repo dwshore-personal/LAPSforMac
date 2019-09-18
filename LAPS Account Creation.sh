@@ -50,6 +50,9 @@ newPass=""
 LAPSaccountEvent=""
 LAPSaccountEventFVE=""
 LAPSrunEvent=""
+apiURL="you.need.this"
+
+jamf_binary="/usr/local/bin/jamf"
 
 # CHECK TO SEE IF A VALUE WAS PASSED IN PARAMETER 4 AND, IF SO, ASSIGN TO "apiUser"
 if [ "$4" != "" ] && [ "$apiUser" == "" ];then
@@ -91,7 +94,6 @@ if [ "${11}" != "" ] && [ "$LAPSrunEvent" == "" ];then
 LAPSrunEvent="${11}"
 fi
 
-apiURL="https://jss.unl.edu:8443"
 LogLocation="/Library/Logs/Casper_LAPS.log"
 
 ####################################################################################################
@@ -192,15 +194,6 @@ ScriptLogging "Parameters Verified."
 # Identify the location of the jamf binary for the jamf_binary variable.
 CheckBinary (){
 # Identify location of jamf binary.
-jamf_binary=`/usr/bin/which jamf`
-
-if [[ "$jamf_binary" == "" ]] && [[ -e "/usr/sbin/jamf" ]] && [[ ! -e "/usr/local/bin/jamf" ]]; then
-jamf_binary="/usr/sbin/jamf"
-elif [[ "$jamf_binary" == "" ]] && [[ ! -e "/usr/sbin/jamf" ]] && [[ -e "/usr/local/bin/jamf" ]]; then
-jamf_binary="/usr/local/bin/jamf"
-elif [[ "$jamf_binary" == "" ]] && [[ -e "/usr/sbin/jamf" ]] && [[ -e "/usr/local/bin/jamf" ]]; then
-jamf_binary="/usr/local/bin/jamf"
-fi
 
 ScriptLogging "JAMF Binary is $jamf_binary"
 }
