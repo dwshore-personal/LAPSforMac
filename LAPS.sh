@@ -55,6 +55,7 @@ jamf_binary="/usr/local/bin/jamf"
 macOS_version=$(sw_vers -productVersion)
 
 ###################Create new Password########################
+Orginal funktion was not working with some chars.
 newPass=$(env LC_CTYPE=C tr -dc "A-Za-z0-9#$_" < /dev/urandom | head -c 16;echo;)
 
 ####################################################################################################
