@@ -137,7 +137,7 @@ if [ "$passwdA" = "" ];then
   ScriptLogging "Password stored in LAPS is correct for $resetUser."
   echo "Password stored in LAPS is correct for $resetUser."
 else
-oldPass="${oldPass//&lt;/$'\<'}"
+oldPass="${oldPass//&lt;/$'<'}"
 fi
 
 passwdA=$(dscl /Local/Default -authonly "$resetUser" "$oldPass")
