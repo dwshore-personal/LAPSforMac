@@ -130,28 +130,19 @@ else
   ScriptLogging "A Password was found in LAPS."
   echo "A Password was found in LAPS."
 fi
-
+# Replace special char.
+oldPass="${oldPass//&lt;/$'<'}"
 passwdA=$(dscl /Local/Default -authonly "$resetUser" "$oldPass")
 
 if [ "$passwdA" = "" ];then
-  ScriptLogging "Password stored in LAPS is correct for $resetUser."
-  echo "Password stored in LAPS is correct for $resetUser."
+  ScriptLogging "Modified password stored in LAPS is correct for $resetUser."
+  echo "Modified password stored in LAPS is correct for $resetUser."
 else
-oldPass="${oldPass//&lt;/$'<'}"
-
-passwdA=$(dscl /Local/Default -authonly "$resetUser" "$oldPass")
-
-  if [ "$passwdA" = "" ];then
-    ScriptLogging "Modified password stored in LAPS is correct for $resetUser."
-    echo "Modified password stored in LAPS is correct for $resetUser."
-
-  else
-    ScriptLogging "Error: Password stored in LAPS is not valid for $resetUser."
-    echo "Error: Password stored in LAPS is not valid for $resetUser."
-    ScriptLogging "======== Aborting LAPS Update ========"
-    echo "======== Aborting LAPS Update ========"
-    exit 1
-  fi
+  ScriptLogging "Error: Password stored in LAPS is not valid for $resetUser."
+  echo "Error: Password stored in LAPS is not valid for $resetUser."
+  ScriptLogging "======== Aborting LAPS Update ========"
+  echo "======== Aborting LAPS Update ========"
+  exit 1
 fi
 }
 
@@ -163,6 +154,8 @@ ScriptLogging "Recording previous password for $resetUser into LAPS."
 sleep 1
 
 TestPass=$(curl -s -f -u $apiUser:$apiPass -H "Accept: application/xml" $apiURL/JSSResource/computers/udid/$udid/subset/extension_attributes | xpath "//extension_attribute[name=$extAttName2]" 2>&1 | awk -F'<value>|</value>' '{print $2}' | tr -d '\n')
+
+TestPass="${TestPass//&lt;/$'<'}"
 
 ScriptLogging "Verifying the current password has been backed up"
 if [ "$TestPass" = "$oldPass" ];then
@@ -228,6 +221,8 @@ echo "Recording new password for $resetUser into LAPS."
 sleep 1
 
 LAPSpass=$(curl -s -f -u $apiUser:$apiPass -H "Accept: application/xml" $apiURL/JSSResource/computers/udid/$udid/subset/extension_attributes | xpath "//extension_attribute[name=$extAttName]" 2>&1 | awk -F'<value>|</value>' '{print $2}' | tr -d '\n')
+
+LAPSpass="${LAPSpass//&lt;/$'<'}"
 
 ScriptLogging "Verifying LAPS password for $resetUser."
 echo "Verifying LAPS password for $resetUser."
