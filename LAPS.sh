@@ -226,6 +226,10 @@ LAPSpass=$(curl -s -f -u $apiUser:$apiPass -H "Accept: application/xml" $apiURL/
 ScriptLogging "Verifying LAPS password for $resetUser."
 echo "Verifying LAPS password for $resetUser."
 
+# debugging
+echo $LAPSpass
+echo $newPass
+
 if [ $LAPSpass = $newPass ];then
   ScriptLogging "LAPS password for $resetUser is verified."
   echo "LAPS password for $resetUser is verified."
