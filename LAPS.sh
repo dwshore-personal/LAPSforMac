@@ -230,7 +230,7 @@ echo "Verifying LAPS password for $resetUser."
 echo $LAPSpass
 echo $newPass
 
-if [ $LAPSpass = $newPass ];then
+if [ "$LAPSpass" = "$newPass" ];then
   ScriptLogging "LAPS password for $resetUser is verified."
   echo "LAPS password for $resetUser is verified."
 else
