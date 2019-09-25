@@ -68,6 +68,9 @@ extAttName2="\"oldLAPS\""
 udid=$(/usr/sbin/system_profiler SPHardwareDataType | /usr/bin/awk '/Hardware UUID:/ { print $3 }')
 oldPass=$(curl -s -f -u $apiUser:$apiPass -H "Accept: application/xml" $apiURL/JSSResource/computers/udid/$udid/subset/extension_attributes | xpath "//extension_attribute[name=$extAttName]" 2>&1 | awk -F'<value>|</value>' '{print $2}' | tr -d '\n')
 
+# Replace special char.
+oldPass="${oldPass//&lt;/$'<'}"
+
 xmlString="<?xml version=\"1.0\" encoding=\"UTF-8\"?><computer><extension_attributes><extension_attribute><name>LAPS</name><value>$newPass</value></extension_attribute></extension_attributes></computer>"
 xmlString2="<?xml version=\"1.0\" encoding=\"UTF-8\"?><computer><extension_attributes><extension_attribute><name>oldLAPS</name><value>$oldPass</value></extension_attribute></extension_attributes></computer>"
 
@@ -131,8 +134,8 @@ else
   ScriptLogging "A Password was found in LAPS."
   echo "A Password was found in LAPS."
 fi
-# Replace special char.
-oldPass="${oldPass//&lt;/$'<'}"
+
+
 passwdA=$(dscl /Local/Default -authonly "$resetUser" "$oldPass")
 
 if [ "$passwdA" = "" ];then
@@ -156,7 +159,7 @@ sleep 1
 
 TestPass=$(curl -s -f -u $apiUser:$apiPass -H "Accept: application/xml" $apiURL/JSSResource/computers/udid/$udid/subset/extension_attributes | xpath "//extension_attribute[name=$extAttName2]" 2>&1 | awk -F'<value>|</value>' '{print $2}' | tr -d '\n')
 
-TestPass="${TestPass//&lt;/$'<'}"
+#TestPass="${TestPass//&lt;/$'<'}"
 
 ScriptLogging "Verifying the current password has been backed up"
 if [ "$TestPass" = "$oldPass" ];then
@@ -219,7 +222,7 @@ echo "Recording new password for $resetUser into LAPS."
 
 /usr/bin/curl -s -u ${apiUser}:${apiPass} -X PUT -H "Content-Type: text/xml" -d "${xmlString}" "${apiURL}/JSSResource/computers/udid/$udid"
 
-sleep 1
+sleep 5
 
 LAPSpass=$(curl -s -f -u $apiUser:$apiPass -H "Accept: application/xml" $apiURL/JSSResource/computers/udid/$udid/subset/extension_attributes | xpath "//extension_attribute[name=$extAttName]" 2>&1 | awk -F'<value>|</value>' '{print $2}' | tr -d '\n')
 
@@ -227,8 +230,15 @@ ScriptLogging "Verifying LAPS password for $resetUser."
 echo "Verifying LAPS password for $resetUser."
 
 # debugging
-echo $LAPSpass
-echo $newPass
+echo "\n"
+echo "xmlString: $xmlString"
+echo "\n"
+echo "extAttName: $extAttName"
+echo "\n"
+echo "LAPSpass: $LAPSpass"
+echo "\n"
+echo "newPass: $newPass"
+echo "\n"
 
 if [ "$LAPSpass" = "$newPass" ];then
   ScriptLogging "LAPS password for $resetUser is verified."
