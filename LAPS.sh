@@ -155,7 +155,7 @@ StoreOldPass (){
 ScriptLogging "Recording previous password for $resetUser into LAPS."
 /usr/bin/curl -s -u ${apiUser}:${apiPass} -X PUT -H "Content-Type: text/xml" -d "${xmlString2}" "${apiURL}/JSSResource/computers/udid/$udid"
 
-sleep 1
+sleep 10
 
 TestPass=$(curl -s -f -u $apiUser:$apiPass -H "Accept: application/xml" $apiURL/JSSResource/computers/udid/$udid/subset/extension_attributes | xpath "//extension_attribute[name=$extAttName2]" 2>&1 | awk -F'<value>|</value>' '{print $2}' | tr -d '\n')
 
@@ -222,7 +222,7 @@ echo "Recording new password for $resetUser into LAPS."
 
 /usr/bin/curl -s -u ${apiUser}:${apiPass} -X PUT -H "Content-Type: text/xml" -d "${xmlString}" "${apiURL}/JSSResource/computers/udid/$udid"
 
-sleep 5
+sleep 10
 
 LAPSpass=$(curl -s -f -u $apiUser:$apiPass -H "Accept: application/xml" $apiURL/JSSResource/computers/udid/$udid/subset/extension_attributes | xpath "//extension_attribute[name=$extAttName]" 2>&1 | awk -F'<value>|</value>' '{print $2}' | tr -d '\n')
 
