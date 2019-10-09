@@ -155,11 +155,23 @@ StoreOldPass (){
 ScriptLogging "Recording previous password for $resetUser into LAPS."
 /usr/bin/curl -s -u ${apiUser}:${apiPass} -X PUT -H "Content-Type: text/xml" -d "${xmlString2}" "${apiURL}/JSSResource/computers/udid/$udid"
 
-sleep 10
+sleep 20
 
 TestPass=$(curl -s -f -u $apiUser:$apiPass -H "Accept: application/xml" $apiURL/JSSResource/computers/udid/$udid/subset/extension_attributes | xpath "//extension_attribute[name=$extAttName2]" 2>&1 | awk -F'<value>|</value>' '{print $2}' | tr -d '\n')
 
-#TestPass="${TestPass//&lt;/$'<'}"
+TestPass="${TestPass//&lt;/$'<'}"
+
+# debugging
+echo "\n"
+echo "xmlString: $xmlString"
+echo "\n"
+echo "extAttName2: $extAttName2"
+echo "\n"
+echo "oldPass: $oldPass"
+echo "\n"
+echo "TestPass: $TestPass"
+echo "\n"
+
 
 ScriptLogging "Verifying the current password has been backed up"
 if [ "$TestPass" = "$oldPass" ];then
@@ -222,7 +234,7 @@ echo "Recording new password for $resetUser into LAPS."
 
 /usr/bin/curl -s -u ${apiUser}:${apiPass} -X PUT -H "Content-Type: text/xml" -d "${xmlString}" "${apiURL}/JSSResource/computers/udid/$udid"
 
-sleep 10
+sleep 20
 
 LAPSpass=$(curl -s -f -u $apiUser:$apiPass -H "Accept: application/xml" $apiURL/JSSResource/computers/udid/$udid/subset/extension_attributes | xpath "//extension_attribute[name=$extAttName]" 2>&1 | awk -F'<value>|</value>' '{print $2}' | tr -d '\n')
 
