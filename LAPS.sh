@@ -163,7 +163,7 @@ TestPass="${TestPass//&lt;/$'<'}"
 
 # debugging
 echo "\n"
-echo "xmlString: $xmlString"
+echo "xmlString2: $xmlString2"
 echo "\n"
 echo "extAttName2: $extAttName2"
 echo "\n"
