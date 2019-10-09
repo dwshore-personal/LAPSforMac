@@ -161,6 +161,8 @@ TestPass=$(curl -s -f -u $apiUser:$apiPass -H "Accept: application/xml" $apiURL/
 
 TestPass="${TestPass//&lt;/$'<'}"
 
+sleep 20
+
 # debugging
 echo "\n"
 echo "xmlString2: $xmlString2"
@@ -237,6 +239,8 @@ echo "Recording new password for $resetUser into LAPS."
 sleep 20
 
 LAPSpass=$(curl -s -f -u $apiUser:$apiPass -H "Accept: application/xml" $apiURL/JSSResource/computers/udid/$udid/subset/extension_attributes | xpath "//extension_attribute[name=$extAttName]" 2>&1 | awk -F'<value>|</value>' '{print $2}' | tr -d '\n')
+
+sleep 20
 
 ScriptLogging "Verifying LAPS password for $resetUser."
 echo "Verifying LAPS password for $resetUser."
