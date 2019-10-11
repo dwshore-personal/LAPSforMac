@@ -66,7 +66,7 @@ newPass=$(env LC_CTYPE=C tr -dc "A-Za-z0-9#$_" < /dev/urandom | head -c 16;echo;
 extAttName="\"LAPS\""
 extAttName2="\"oldLAPS\""
 udid=$(/usr/sbin/system_profiler SPHardwareDataType | /usr/bin/awk '/Hardware UUID:/ { print $3 }')
-oldPass=$(curl -s -f -u $apiUser:$apiPass -H "Accept: application/xml" $apiURL/JSSResource/computers/udid/$udid/subset/extension_attributes | xpath "//extension_attribute[name=$extAttName]" 2>&1 | awk -F'<value>|</value>' '{print $2}' | tr -d '\n')
+oldPass=$(curl -s -f -u $apiUser:$apiPass -H "Accept: application/xml" -H "cache-control: no-cache" $apiURL/JSSResource/computers/udid/$udid/subset/extension_attributes | xpath "//extension_attribute[name=$extAttName]" 2>&1 | awk -F'<value>|</value>' '{print $2}' | tr -d '\n')
 
 # Replace special char.
 oldPass="${oldPass//&lt;/$'<'}"
@@ -153,15 +153,14 @@ fi
 # Store the old password and verify that it's stored before attempting to reset it
 StoreOldPass (){
 ScriptLogging "Recording previous password for $resetUser into LAPS."
-/usr/bin/curl -s -u ${apiUser}:${apiPass} -X PUT -H "Content-Type: text/xml" -d "${xmlString2}" "${apiURL}/JSSResource/computers/udid/$udid"
+/usr/bin/curl -s -u ${apiUser}:${apiPass} -X PUT -H "Content-Type: text/xml" -H "cache-control: no-cache" -d "${xmlString2}" "${apiURL}/JSSResource/computers/udid/$udid"
 
-sleep 20
+sleep 3
 
-TestPass=$(curl -s -f -u $apiUser:$apiPass -H "Accept: application/xml" $apiURL/JSSResource/computers/udid/$udid/subset/extension_attributes | xpath "//extension_attribute[name=$extAttName2]" 2>&1 | awk -F'<value>|</value>' '{print $2}' | tr -d '\n')
+TestPass=$(curl -s -f -u $apiUser:$apiPass -H "Accept: application/xml" -H "cache-control: no-cache" $apiURL/JSSResource/computers/udid/$udid/subset/extension_attributes | xpath "//extension_attribute[name=$extAttName2]" 2>&1 | awk -F'<value>|</value>' '{print $2}' | tr -d '\n')
 
 TestPass="${TestPass//&lt;/$'<'}"
 
-sleep 20
 
 # debugging
 echo "\n"
@@ -234,13 +233,11 @@ UpdateAPI (){
 ScriptLogging "Recording new password for $resetUser into LAPS."
 echo "Recording new password for $resetUser into LAPS."
 
-/usr/bin/curl -s -u ${apiUser}:${apiPass} -X PUT -H "Content-Type: text/xml" -d "${xmlString}" "${apiURL}/JSSResource/computers/udid/$udid"
+/usr/bin/curl -s -u ${apiUser}:${apiPass} -X PUT -H "Content-Type: text/xml" -H "cache-control: no-cache" -d "${xmlString}" "${apiURL}/JSSResource/computers/udid/$udid"
 
-sleep 20
+sleep 3
 
-LAPSpass=$(curl -s -f -u $apiUser:$apiPass -H "Accept: application/xml" $apiURL/JSSResource/computers/udid/$udid/subset/extension_attributes | xpath "//extension_attribute[name=$extAttName]" 2>&1 | awk -F'<value>|</value>' '{print $2}' | tr -d '\n')
-
-sleep 20
+LAPSpass=$(curl -s -f -u $apiUser:$apiPass -H "Accept: application/xml" -H "cache-control: no-cache" $apiURL/JSSResource/computers/udid/$udid/subset/extension_attributes | xpath "//extension_attribute[name=$extAttName]" 2>&1 | awk -F'<value>|</value>' '{print $2}' | tr -d '\n')
 
 ScriptLogging "Verifying LAPS password for $resetUser."
 echo "Verifying LAPS password for $resetUser."
