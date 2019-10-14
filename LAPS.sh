@@ -155,24 +155,20 @@ StoreOldPass (){
 ScriptLogging "Recording previous password for $resetUser into LAPS."
 /usr/bin/curl -s -u ${apiUser}:${apiPass} -X PUT -H "Content-Type: text/xml" -H "cache-control: no-cache" -d "${xmlString2}" "${apiURL}/JSSResource/computers/udid/$udid"
 
-sleep 3
-
-TestPass=$(curl -s -f -u $apiUser:$apiPass -H "Accept: application/xml" -H "cache-control: no-cache" $apiURL/JSSResource/computers/udid/$udid/subset/extension_attributes | xpath "//extension_attribute[name=$extAttName2]" 2>&1 | awk -F'<value>|</value>' '{print $2}' | tr -d '\n')
-
-TestPass="${TestPass//&lt;/$'<'}"
-
-
-# debugging
-echo "\n"
-echo "xmlString2: $xmlString2"
-echo "\n"
-echo "extAttName2: $extAttName2"
-echo "\n"
-echo "oldPass: $oldPass"
-echo "\n"
-echo "TestPass: $TestPass"
-echo "\n"
-
+#sleep 3
+n=0;
+while [ "$TestPass" != "$oldPass" ];do
+ 
+  TestPass=$(curl -s -f -u $apiUser:$apiPass -H "Accept: application/xml" -H "cache-control: no-cache" $apiURL/JSSResource/computers/udid/$udid/subset/extension_attributes | xpath "//extension_attribute[name=$extAttName2]" 2>&1 | awk -F'<value>|</value>' '{print $2}' | tr -d '\n')
+  TestPass="${TestPass//&lt;/$'<'}"
+  TestPass="${TestPass//&gt;/$'<'}
+  
+  if [ $n -eq 10 ];then
+    break;
+  fi
+  sleep 1
+  n=$[$n+1];
+done;
 
 ScriptLogging "Verifying the current password has been backed up"
 if [ "$TestPass" = "$oldPass" ];then
@@ -235,23 +231,22 @@ echo "Recording new password for $resetUser into LAPS."
 
 /usr/bin/curl -s -u ${apiUser}:${apiPass} -X PUT -H "Content-Type: text/xml" -H "cache-control: no-cache" -d "${xmlString}" "${apiURL}/JSSResource/computers/udid/$udid"
 
-sleep 3
+#sleep 3
+
+n=0;
+while [ "$LAPSpass" != "$newPass" ];do
 
 LAPSpass=$(curl -s -f -u $apiUser:$apiPass -H "Accept: application/xml" -H "cache-control: no-cache" $apiURL/JSSResource/computers/udid/$udid/subset/extension_attributes | xpath "//extension_attribute[name=$extAttName]" 2>&1 | awk -F'<value>|</value>' '{print $2}' | tr -d '\n')
 
+if [ $n -eq 10 ];then
+    break;
+  fi
+  sleep 1
+  n=$[$n+1];
+done;
+
 ScriptLogging "Verifying LAPS password for $resetUser."
 echo "Verifying LAPS password for $resetUser."
-
-# debugging
-echo "\n"
-echo "xmlString: $xmlString"
-echo "\n"
-echo "extAttName: $extAttName"
-echo "\n"
-echo "LAPSpass: $LAPSpass"
-echo "\n"
-echo "newPass: $newPass"
-echo "\n"
 
 if [ "$LAPSpass" = "$newPass" ];then
   ScriptLogging "LAPS password for $resetUser is verified."
