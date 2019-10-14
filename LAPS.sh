@@ -70,6 +70,10 @@ oldPass=$(curl -s -f -u $apiUser:$apiPass -H "Accept: application/xml" -H "cache
 
 # Replace special char.
 oldPass="${oldPass//&lt;/$'<'}"
+oldPass="${oldPass//&gt;/$'>'}
+oldPass="${oldPass//&quot;/$'"'}
+oldPass="${oldPass//&apos;;/$'''}
+oldPass="${oldPass//&amp;/$'&'}
 
 xmlString="<?xml version=\"1.0\" encoding=\"UTF-8\"?><computer><extension_attributes><extension_attribute><name>LAPS</name><value>$newPass</value></extension_attribute></extension_attributes></computer>"
 xmlString2="<?xml version=\"1.0\" encoding=\"UTF-8\"?><computer><extension_attributes><extension_attribute><name>oldLAPS</name><value>$oldPass</value></extension_attribute></extension_attributes></computer>"
@@ -160,8 +164,12 @@ n=0;
 while [ "$TestPass" != "$oldPass" ];do
  
   TestPass=$(curl -s -f -u $apiUser:$apiPass -H "Accept: application/xml" -H "cache-control: no-cache" $apiURL/JSSResource/computers/udid/$udid/subset/extension_attributes | xpath "//extension_attribute[name=$extAttName2]" 2>&1 | awk -F'<value>|</value>' '{print $2}' | tr -d '\n')
+ 
   TestPass="${TestPass//&lt;/$'<'}"
   TestPass="${TestPass//&gt;/$'<'}
+  TestPass="${TestPass//&quot;/$'"'}
+  TestPass="${TestPass//&apos;;/$'''}
+  TestPass="${TestPass//&amp;/$'&'}
   
   if [ $n -eq 10 ];then
     break;
@@ -237,6 +245,13 @@ n=0;
 while [ "$LAPSpass" != "$newPass" ];do
 
 LAPSpass=$(curl -s -f -u $apiUser:$apiPass -H "Accept: application/xml" -H "cache-control: no-cache" $apiURL/JSSResource/computers/udid/$udid/subset/extension_attributes | xpath "//extension_attribute[name=$extAttName]" 2>&1 | awk -F'<value>|</value>' '{print $2}' | tr -d '\n')
+
+  LAPSpass="${LAPSpass//&lt;/$'<'}"
+  LAPSpass="${LAPSpass//&gt;/$'<'}
+  LAPSpass="${LAPSpass//&quot;/$'"'}
+  LAPSpass="${LAPSpass//&apos;;/$'''}
+  LAPSpass="${LAPSpass//&amp;/$'&'}
+
 
 if [ $n -eq 10 ];then
     break;
