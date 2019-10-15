@@ -159,7 +159,7 @@ StoreOldPass (){
 ScriptLogging "Recording previous password for $resetUser into LAPS."
 /usr/bin/curl -s -u ${apiUser}:${apiPass} -X PUT -H "Content-Type: text/xml" -H "cache-control: no-cache" -d "${xmlString2}" "${apiURL}/JSSResource/computers/udid/$udid"
 
-sleep 3
+sleep 5
 n=0;
 while [ "$TestPass" != "$oldPass" ];do
  
@@ -174,7 +174,7 @@ while [ "$TestPass" != "$oldPass" ];do
   if [ $n -eq 20 ];then
     break;
   fi
-  sleep 1
+  sleep 2
   n=$[$n+1];
 done;
 
@@ -239,7 +239,7 @@ echo "Recording new password for $resetUser into LAPS."
 
 /usr/bin/curl -s -u ${apiUser}:${apiPass} -X PUT -H "Content-Type: text/xml" -H "cache-control: no-cache" -d "${xmlString}" "${apiURL}/JSSResource/computers/udid/$udid"
 
-sleep 3
+sleep 5
 
 n=0;
 while [ "$LAPSpass" != "$newPass" ];do
@@ -256,7 +256,7 @@ LAPSpass=$(curl -s -f -u $apiUser:$apiPass -H "Accept: application/xml" -H "cach
 if [ $n -eq 20 ];then
     break;
   fi
-  sleep 1
+  sleep 2
   n=$[$n+1];
 done;
 
