@@ -66,14 +66,20 @@ newPass=$(env LC_CTYPE=C tr -dc "A-Za-z0-9#$_" < /dev/urandom | head -c 16;echo;
 extAttName="\"LAPS\""
 extAttName2="\"oldLAPS\""
 udid=$(/usr/sbin/system_profiler SPHardwareDataType | /usr/bin/awk '/Hardware UUID:/ { print $3 }')
-oldPass=$(curl -s -f -u $apiUser:$apiPass -H "Accept: application/xml" -H "cache-control: no-cache" $apiURL/JSSResource/computers/udid/$udid/subset/extension_attributes | xpath "//extension_attribute[name=$extAttName]" 2>&1 | awk -F'<value>|</value>' '{print $2}' | tr -d '\n')
+oldPass=$(curl -s -f -u $apiUser:$apiPass -H "Accept: application/xml" -H "Cache-Control: no-store, no-cache, must-revalidate, max-age=0, post-check=0" -H "Connection: no-keepalive", pre-check=0 $apiURL/JSSResource/computers/udid/$udid/subset/extension_attributes | xpath "//extension_attribute[name=$extAttName]" 2>&1 | awk -F'<value>|</value>' '{print $2}' | tr -d '\n')
 
-# Replace special chars.
-oldPass="${oldPass//&lt;/$'<'}"
-oldPass="${oldPass//&gt;/$'>'}"
-oldPass="${oldPass//\"/&quot;}"
-oldPass="${oldPass//\'/&apos;}"
-oldPass="${oldPass//&amp;/$'&'}"
+# Replace special char.
+#oldPass="${oldPass//&lt;/$'<'}"
+#oldPass="${oldPass//&gt;/$'>'}"
+#oldPass="${oldPass//\"/&quot;}"
+#oldPass="${oldPass//\'/&apos;}"
+#oldPass="${oldPass//&amp;/$'&'}"
+
+oldPass="$(echo $oldPass | sed 's/\&lt;/</g')"
+oldPass="$(echo $oldPass | sed 's/\&gt;/>/g')"
+oldPass="$(echo $oldPass | sed 's/\&quot;/\"/g')"
+oldPass="$(echo $oldPass | sed "s/&apos;/'/g")"
+oldPass="$(echo $oldPass | sed 's/\&amp;/\&/g')"
 
 xmlString="<?xml version=\"1.0\" encoding=\"UTF-8\"?><computer><extension_attributes><extension_attribute><name>LAPS</name><value>$newPass</value></extension_attribute></extension_attributes></computer>"
 xmlString2="<?xml version=\"1.0\" encoding=\"UTF-8\"?><computer><extension_attributes><extension_attribute><name>oldLAPS</name><value>$oldPass</value></extension_attribute></extension_attributes></computer>"
@@ -133,6 +139,7 @@ if [ -z "$oldPass" ]; then
   echo "No Password is stored in LAPS."
   ScriptLogging "======== Aborting LAPS Update ========"
   echo "======== Aborting LAPS Update ========"
+ 
   exit 1
 else
   ScriptLogging "A Password was found in LAPS."
@@ -157,24 +164,32 @@ fi
 # Store the old password and verify that it's stored before attempting to reset it
 StoreOldPass (){
 ScriptLogging "Recording previous password for $resetUser into LAPS."
-/usr/bin/curl -s -u ${apiUser}:${apiPass} -X PUT -H "Content-Type: text/xml" -H "cache-control: no-cache" -d "${xmlString2}" "${apiURL}/JSSResource/computers/udid/$udid"
+/usr/bin/curl -s -u ${apiUser}:${apiPass} -X PUT -H "accept: application/xml" -H "Content-Type: application/xml" -H "Cache-Control: no-store, no-cache, must-revalidate, max-age=0, post-check=0" -H "Connection: no-keepalive" -d "${xmlString2}" "${apiURL}/JSSResource/computers/udid/$udid"
 
-sleep 5
+sleep 10
 n=0;
 while [ "$TestPass" != "$oldPass" ];do
  
-  TestPass=$(curl -s -f -u $apiUser:$apiPass -H "Accept: application/xml" -H "cache-control: no-cache" $apiURL/JSSResource/computers/udid/$udid/subset/extension_attributes | xpath "//extension_attribute[name=$extAttName2]" 2>&1 | awk -F'<value>|</value>' '{print $2}' | tr -d '\n')
+#sleep 1
+
+  TestPass=$(curl -s -f -u $apiUser:$apiPass -H "Accept: application/xml" -H "Cache-Control: no-store, no-cache, must-revalidate, max-age=0, post-check=0" -H "Connection: no-keepalive" $apiURL/JSSResource/computers/udid/$udid/subset/extension_attributes | xpath "//extension_attribute[name=$extAttName2]" 2>&1 | awk -F'<value>|</value>' '{print $2}' | tr -d '\n')
  
-  TestPass="${TestPass//&lt;/$'<'}"
-  TestPass="${TestPass//&gt;/$'<'}"
-  TestPass="${TestPass//\"/&quot;}"
-  TestPass="${TestPass//\'/&apos;}"
-  TestPass="${TestPass//&amp;/$'&'}"
+#  TestPass="${TestPass//&lt;/$'<'}"
+#  TestPass="${TestPass//&gt;/$'<'}"
+#  TestPass="${TestPass//\"/&quot;}"
+#  TestPass="${TestPass//\'/&apos;}"
+#  TestPass="${TestPass//&amp;/$'&'}"
+  
+  TestPass="$(echo $TestPass | sed 's/\&lt;/</g')"
+  TestPass="$(echo $TestPass | sed 's/\&gt;/>/g')"
+  TestPass="$(echo $TestPass | sed 's/\&quot;/\"/g')"
+  TestPass="$(echo $TestPass | sed "s/&apos;/'/g")"
+  TestPass="$(echo $TestPass | sed 's/\&amp;/\&/g')"
   
   if [ $n -eq 20 ];then
     break;
   fi
-  sleep 2
+  sleep 10
   n=$[$n+1];
 done;
 
@@ -208,7 +223,7 @@ elif [[ $macOS_version == 10.11.* ]]; then
   $jamf_binary resetPassword -username $resetUser -password $newPass
 elif [[ $macOS_version == 10.12.* ]]; then
    $jamf_binary resetPassword -username $resetUser -password $newPass
-elif [[ $macOS_version == 10.13.* ]]; then #Not sure this is correct!
+elif [[ $macOS_version == 10.13.* ]]; then 
    $jamf_binary resetPassword -username $resetUser -password $newPass
 else 
    sysadminctl -adminUser $resetUser -adminPassword $oldPass -resetPasswordFor $resetUser -newPassword $newPass
@@ -237,26 +252,34 @@ UpdateAPI (){
 ScriptLogging "Recording new password for $resetUser into LAPS."
 echo "Recording new password for $resetUser into LAPS."
 
-/usr/bin/curl -s -u ${apiUser}:${apiPass} -X PUT -H "Content-Type: text/xml" -H "cache-control: no-cache" -d "${xmlString}" "${apiURL}/JSSResource/computers/udid/$udid"
+/usr/bin/curl -s -u ${apiUser}:${apiPass} -X PUT -H "accept: application/xml" -H "Content-Type: application/xml" -H "Cache-Control: no-store, no-cache, must-revalidate, max-age=0, post-check=0" -H "Connection: no-keepalive" -d "${xmlString}" "${apiURL}/JSSResource/computers/udid/$udid"
 
-sleep 5
+sleep 10
 
 n=0;
 while [ "$LAPSpass" != "$newPass" ];do
 
-LAPSpass=$(curl -s -f -u $apiUser:$apiPass -H "Accept: application/xml" -H "cache-control: no-cache" $apiURL/JSSResource/computers/udid/$udid/subset/extension_attributes | xpath "//extension_attribute[name=$extAttName]" 2>&1 | awk -F'<value>|</value>' '{print $2}' | tr -d '\n')
+#sleep 1
 
-  LAPSpass="${LAPSpass//&lt;/$'<'}"
-  LAPSpass="${LAPSpass//&gt;/$'<'}"
-  LAPSpass="${LAPSpass//\"/&quot;}"
-  LAPSpass="${LAPSpass//\'/&apos;}"
-  LAPSpass="${LAPSpass//&amp;/$'&'}"
+LAPSpass=$(curl -s -f -u $apiUser:$apiPass -H "Accept: application/xml" -H "Cache-Control: no-store, no-cache, must-revalidate, max-age=0, post-check=0" -H "Connection: no-keepalive" $apiURL/JSSResource/computers/udid/$udid/subset/extension_attributes | xpath "//extension_attribute[name=$extAttName]" 2>&1 | awk -F'<value>|</value>' '{print $2}' | tr -d '\n')
+
+#  LAPSpass="${LAPSpass//&lt;/$'<'}"
+#  LAPSpass="${LAPSpass//&gt;/$'<'}"
+#  LAPSpass="${LAPSpass//\"/&quot;}"
+#  LAPSpass="${LAPSpass//\'/&apos;}"
+#  LAPSpass="${LAPSpass//&amp;/$'&'}"
+
+  LAPSpass="$(echo $LAPSpass | sed 's/\&lt;/</g')"
+  LAPSpass="$(echo $LAPSpass | sed 's/\&gt;/>/g')"
+  LAPSpass="$(echo $LAPSpass | sed 's/\&quot;/\"/g')"
+  LAPSpass="$(echo $LAPSpass | sed "s/&apos;/'/g")"
+  LAPSpass="$(echo $LAPSpass | sed 's/\&amp;/\&/g')"
 
 
 if [ $n -eq 20 ];then
     break;
   fi
-  sleep 2
+  sleep 10
   n=$[$n+1];
 done;
 
@@ -276,9 +299,10 @@ fi
 
 CheckOldPassword
 StoreOldPass
-UpdateAPI
+##UpdateAPI
 RunLAPS
 CheckNewPassword
+UpdateAPI
 
 ScriptLogging "======== LAPS Update Finished ========"
 echo "LAPS Update Finished; Running Recon"
