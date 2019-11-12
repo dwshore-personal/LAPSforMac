@@ -173,15 +173,12 @@ if [ $n -eq 10 ];then
     break;
 fi
 
-  n=$[$n+1];
-
+n=$[$n+1];
 
 done;
-
 n=0;
+
 while [ "$TestPass" != "$oldPass" ];do
- 
-#sleep 1
 
   TestPass=$(curl -s -f -u $apiUser:$apiPass -H "Accept: application/xml" -H "Cache-Control: no-store, no-cache, must-revalidate, max-age=0, post-check=0" -H "Connection: no-keepalive" $apiURL/JSSResource/computers/udid/$udid/subset/extension_attributes | xpath "//extension_attribute[name=$extAttName2]" 2>&1 | awk -F'<value>|</value>' '{print $2}' | tr -d '\n')
   
@@ -195,7 +192,7 @@ while [ "$TestPass" != "$oldPass" ];do
     break;
   fi
   sleep 10
-  n=$[$n+1];
+ n=$[$n+1];
 done;
 
 ScriptLogging "Verifying the current password has been backed up"
@@ -269,32 +266,27 @@ echo "Result from UpdateAPI: $res"
 sleep 10
 
 if [ $n -eq 10 ];then
-    break;
-  fi
+  break;
+fi
 
-  n=$[$n+1];
-
-
+n=$[$n+1];
 done;
 
 n=0;
 while [ "$LAPSpass" != "$newPass" ];do
 
-#sleep 1
-
-LAPSpass=$(curl -s -f -u $apiUser:$apiPass -H "Accept: application/xml" -H "Cache-Control: no-store, no-cache, must-revalidate, max-age=0, post-check=0" -H "Connection: no-keepalive" $apiURL/JSSResource/computers/udid/$udid/subset/extension_attributes | xpath "//extension_attribute[name=$extAttName]" 2>&1 | awk -F'<value>|</value>' '{print $2}' | tr -d '\n')
-
-
+  LAPSpass=$(curl -s -f -u $apiUser:$apiPass -H "Accept: application/xml" -H "Cache-Control: no-store, no-cache, must-revalidate, max-age=0, post-check=0" -H "Connection: no-keepalive" $apiURL/JSSResource/computers/udid/$udid/subset/extension_attributes | xpath "//extension_attribute[name=$extAttName]" 2>&1 | awk -F'<value>|</value>' '{print $2}' | tr -d '\n')
+  
   LAPSpass="$(echo $LAPSpass | sed 's/\&lt;/</g')"
   LAPSpass="$(echo $LAPSpass | sed 's/\&gt;/>/g')"
   LAPSpass="$(echo $LAPSpass | sed 's/\&quot;/\"/g')"
   LAPSpass="$(echo $LAPSpass | sed "s/&apos;/'/g")"
   LAPSpass="$(echo $LAPSpass | sed 's/\&amp;/\&/g')"
 
-
-if [ $n -eq 10 ];then
+  if [ $n -eq 10 ];then
     break;
   fi
+  
   sleep 10
   n=$[$n+1];
 done;
