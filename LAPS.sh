@@ -66,14 +66,36 @@ newPass=$(env LC_CTYPE=C tr -dc "A-Za-z0-9#$_" < /dev/urandom | head -c 16;echo;
 extAttName="\"LAPS\""
 extAttName2="\"oldLAPS\""
 udid=$(/usr/sbin/system_profiler SPHardwareDataType | /usr/bin/awk '/Hardware UUID:/ { print $3 }')
-oldPass=$(curl -s -f -u $apiUser:$apiPass -H "Accept: application/xml" -H "Cache-Control: no-store, no-cache, must-revalidate, max-age=0, post-check=0" -H "Connection: no-keepalive", pre-check=0 $apiURL/JSSResource/computers/udid/$udid/subset/extension_attributes | xpath "//extension_attribute[name=$extAttName]" 2>&1 | awk -F'<value>|</value>' '{print $2}' | tr -d '\n')
 
+function ReplacePasswordCharacters () { 
+    myPass=$1
+    myPass="$(echo $myPass | sed 's/\&lt;/</g')"
+    myPass="$(echo $myPass | sed 's/\&gt;/>/g')"
+    myPass="$(echo $myPass | sed 's/\&quot;/\"/g')"
+    myPass="$(echo $myPass | sed "s/&apos;/'/g")"
+    myPass="$(echo $myPass | sed 's/\&amp;/\&/g')"
+    echo "$myPass"
+}
+ 
+#oldPass=$(curl -s -u $apiUser:$apiPass -H "Accept: application/xml" -H "Cache-Control: no-store, no-cache, must-revalidate, max-age=0, post-check=0" -H "Connection: no-keepalive", pre-check=0 $apiURL/JSSResource/computers/udid/$udid/subset/extension_attributes | xpath "//extension_attribute[name=$extAttName]" 2>&1 | awk -F'<value>|</value>' '{print $2}' | tr -d '\n')
+	
+while true
+do
+	HTTP_RESPONSE=$(curl -s -u $apiUser:$apiPass "HTTPSTATUS:%{http_code}" -H "Accept: application/xml" -H "Cache-Control: no-store, no-cache, must-revalidate, max-age=0, post-check=0" -H "Connection: no-keepalive", pre-check=0 $apiURL/JSSResource/computers/udid/$udid/subset/extension_attributes)
+	HTTP_STATUS=$(echo $HTTP_RESPONSE | tr -d '\n' | sed -e 's/.*HTTPSTATUS://')
+  	if [ $HTTP_STATUS -eq 200 ]; then
+    	echo "Got 200! All done!"
+   		HTTP_BODY=$(echo $HTTP_RESPONSE | sed -e 's/HTTPSTATUS\:.*//g')
+    	oldPass=$(echo $HTTP_BODY | xpath "//extension_attribute[name=$extAttName]" 2>&1 | awk -F'<value>|</value>' '{print $2}' | tr -d '\n')
+    	break
+  	else
+    	echo "Got $STATUS :( Not done yet..."
+  	fi
+sleep 10
+done
 
-oldPass="$(echo $oldPass | sed 's/\&lt;/</g')"
-oldPass="$(echo $oldPass | sed 's/\&gt;/>/g')"
-oldPass="$(echo $oldPass | sed 's/\&quot;/\"/g')"
-oldPass="$(echo $oldPass | sed "s/&apos;/'/g")"
-oldPass="$(echo $oldPass | sed 's/\&amp;/\&/g')"
+oldPass=$(ReplacePasswordCharacters $oldPass)
+
 
 xmlString="<?xml version=\"1.0\" encoding=\"UTF-8\"?><computer><extension_attributes><extension_attribute><name>LAPS</name><value>$newPass</value></extension_attribute></extension_attributes></computer>"
 xmlString2="<?xml version=\"1.0\" encoding=\"UTF-8\"?><computer><extension_attributes><extension_attribute><name>oldLAPS</name><value>$oldPass</value></extension_attribute></extension_attributes></computer>"
@@ -173,26 +195,46 @@ if [ $n -eq 10 ];then
     break;
 fi
 
-n=$[$n+1];
+  n=$[$n+1];
+
 
 done;
+
+
+if [ "$res" != "201" ]; then
+	exit 1
+fi
+
 n=0;
-
 while [ "$TestPass" != "$oldPass" ];do
+ 
+#sleep 1
 
-  TestPass=$(curl -s -f -u $apiUser:$apiPass -H "Accept: application/xml" -H "Cache-Control: no-store, no-cache, must-revalidate, max-age=0, post-check=0" -H "Connection: no-keepalive" $apiURL/JSSResource/computers/udid/$udid/subset/extension_attributes | xpath "//extension_attribute[name=$extAttName2]" 2>&1 | awk -F'<value>|</value>' '{print $2}' | tr -d '\n')
-  
-  TestPass="$(echo $TestPass | sed 's/\&lt;/</g')"
-  TestPass="$(echo $TestPass | sed 's/\&gt;/>/g')"
-  TestPass="$(echo $TestPass | sed 's/\&quot;/\"/g')"
-  TestPass="$(echo $TestPass | sed "s/&apos;/'/g")"
-  TestPass="$(echo $TestPass | sed 's/\&amp;/\&/g')"
+#TestPass=$(curl -s -f -u $apiUser:$apiPass -H "Accept: application/xml" -H "Cache-Control: no-store, no-cache, must-revalidate, max-age=0, post-check=0" -H "Connection: no-keepalive" $apiURL/JSSResource/computers/udid/$udid/subset/extension_attributes | xpath "//extension_attribute[name=$extAttName2]" 2>&1 | awk -F'<value>|</value>' '{print $2}' | tr -d '\n')
+  	
+while true
+do
+	HTTP_RESPONSE=$(curl -s -u $apiUser:$apiPass "HTTPSTATUS:%{http_code}" -H "Accept: application/xml" -H "Cache-Control: no-store, no-cache, must-revalidate, max-age=0, post-check=0" -H "Connection: no-keepalive", pre-check=0 $apiURL/JSSResource/computers/udid/$udid/subset/extension_attributes)
+	HTTP_STATUS=$(echo $HTTP_RESPONSE | tr -d '\n' | sed -e 's/.*HTTPSTATUS://')
+  	if [ $HTTP_STATUS -eq 200 ]; then
+    	echo "Got 200! All done!"
+   		HTTP_BODY=$(echo $HTTP_RESPONSE | sed -e 's/HTTPSTATUS\:.*//g')
+    	TestPass=$(echo $HTTP_BODY | xpath "//extension_attribute[name=$extAttName2]" 2>&1 | awk -F'<value>|</value>' '{print $2}' | tr -d '\n')
+    	break
+  	else
+    	echo "Got $STATUS :( Not done yet..."
+  	fi
+sleep 10
+done
+  	
+  	
+TestPass=$(ReplacePasswordCharacters $TestPass)
   
   if [ $n -eq 10 ];then
     break;
   fi
   sleep 10
- n=$[$n+1];
+  n=$[$n+1];
 done;
 
 ScriptLogging "Verifying the current password has been backed up"
@@ -266,27 +308,47 @@ echo "Result from UpdateAPI: $res"
 sleep 10
 
 if [ $n -eq 10 ];then
-  break;
-fi
+    break;
+  fi
 
-n=$[$n+1];
+  n=$[$n+1];
+
+
 done;
+
+if [ "$res" != "201" ]; then
+	exit 1
+fi
 
 n=0;
 while [ "$LAPSpass" != "$newPass" ];do
 
-  LAPSpass=$(curl -s -f -u $apiUser:$apiPass -H "Accept: application/xml" -H "Cache-Control: no-store, no-cache, must-revalidate, max-age=0, post-check=0" -H "Connection: no-keepalive" $apiURL/JSSResource/computers/udid/$udid/subset/extension_attributes | xpath "//extension_attribute[name=$extAttName]" 2>&1 | awk -F'<value>|</value>' '{print $2}' | tr -d '\n')
-  
-  LAPSpass="$(echo $LAPSpass | sed 's/\&lt;/</g')"
-  LAPSpass="$(echo $LAPSpass | sed 's/\&gt;/>/g')"
-  LAPSpass="$(echo $LAPSpass | sed 's/\&quot;/\"/g')"
-  LAPSpass="$(echo $LAPSpass | sed "s/&apos;/'/g")"
-  LAPSpass="$(echo $LAPSpass | sed 's/\&amp;/\&/g')"
+#sleep 1
 
-  if [ $n -eq 10 ];then
+#LAPSpass=$(curl -s -f -u $apiUser:$apiPass -H "Accept: application/xml" -H "Cache-Control: no-store, no-cache, must-revalidate, max-age=0, post-check=0" -H "Connection: no-keepalive" $apiURL/JSSResource/computers/udid/$udid/subset/extension_attributes | xpath "//extension_attribute[name=$extAttName]" 2>&1 | awk -F'<value>|</value>' '{print $2}' | tr -d '\n')
+
+while true
+do
+	HTTP_RESPONSE=$(curl -s -u $apiUser:$apiPass "HTTPSTATUS:%{http_code}" -H "Accept: application/xml" -H "Cache-Control: no-store, no-cache, must-revalidate, max-age=0, post-check=0" -H "Connection: no-keepalive", pre-check=0 $apiURL/JSSResource/computers/udid/$udid/subset/extension_attributes)
+	HTTP_STATUS=$(echo $HTTP_RESPONSE | tr -d '\n' | sed -e 's/.*HTTPSTATUS://')
+  	if [ $HTTP_STATUS -eq 200 ]; then
+    	echo "Got 200! All done!"
+   		HTTP_BODY=$(echo $HTTP_RESPONSE | sed -e 's/HTTPSTATUS\:.*//g')
+    	LAPSpass=$(echo $HTTP_BODY | xpath "//extension_attribute[name=$extAttName]" 2>&1 | awk -F'<value>|</value>' '{print $2}' | tr -d '\n')
+    	break
+  	else
+    	echo "Got $STATUS :( Not done yet..."
+  	fi
+sleep 10
+done
+
+
+LAPSpass=$(ReplacePasswordCharacters $LAPSpass)
+
+
+if [ $n -eq 10 ];then
     break;
   fi
-  
   sleep 10
   n=$[$n+1];
 done;
