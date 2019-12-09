@@ -57,7 +57,7 @@ macOS_version=$(sw_vers -productVersion)
 
 ###################Create new Password########################
 ## Orginal funktion was not working with some chars.
-newPass=$(env LC_CTYPE=C tr -dc "A-Za-z0-9#$_" < /dev/urandom | head -c 16;echo;)
+newPass=$(env LC_CTYPE=C tr -dc "A-Za-z0-9" < /dev/urandom | head -c 16;echo;)
 
 ####################################################################################################
 #
@@ -81,7 +81,8 @@ function ReplacePasswordCharacters () {
 #' Behåll denna för att få rätt färgkodning
 
 n=0;
-	
+HTTP_STATUS=0;
+
 while true
 do
 
@@ -92,7 +93,7 @@ do
     	echo "Got 200! All done!"
    		HTTP_BODY=$(echo $HTTP_RESPONSE | sed -e 's/HTTPSTATUS\:200//g')
     	oldPass=$(echo $HTTP_BODY | xpath "//extension_attribute[name=$extAttName]" 2>&1 | awk -F'<value>|</value>' '{print $2}' | tr -d '\n')
-    	break
+    	break;
   	else
     	echo "Got $HTTP_STATUS :( Not done yet..."
   	fi
@@ -103,6 +104,11 @@ fi
 n=$[$n+1];
 
 done
+
+if [ $HTTP_STATUS != 200 ]; then
+	echo "Error GetOldPass not ready"
+	exit 1
+fi
 
 oldPass=$(ReplacePasswordCharacters $oldPass)
 
@@ -194,26 +200,54 @@ ScriptLogging "Recording previous password for $resetUser into LAPS."
 
 res=0;
 n=0;
+HTTP_STATUS=0;
 
-while [ $res != 201 ];do
-res=$(/usr/bin/curl -s -u ${apiUser}:${apiPass} -X PUT -w '%{http_code}' -s -o /dev/null -H "accept: application/xml" -H "Content-Type: application/xml" -H "Cache-Control: no-store, no-cache, must-revalidate, max-age=0, post-check=0" -H "Connection: no-keepalive" -d "${xmlString2}" "${apiURL}/JSSResource/computers/udid/$udid")
+#while [ $res != 201 ];do
+#res=$(/usr/bin/curl -s -u ${apiUser}:${apiPass} -X PUT -w '%{http_code}' -o /dev/null -H "accept: application/xml" -H "Content-Type: application/xml" -H "Cache-Control: no-store, no-cache, must-revalidate, max-age=0, post-check=0" -H "Connection: no-keepalive" -d "${xmlString2}" "${apiURL}/JSSResource/computers/udid/$udid")
 
-sleep 10
+#sleep 10
 
-if [ $n -eq 60 ];then
-    break;
-fi
+#if [ $n -eq 60 ];then
+#	echo "Something whent wrong n hit $n"
+#    break;
+#fi
 
-n=$[$n+1];
+#n=$[$n+1];
+
+#done;
+
+while true
+do
+
+	res=$(/usr/bin/curl -s -u ${apiUser}:${apiPass} -X PUT -w '%{http_code}' -o /dev/null -H "accept: application/xml" -H "Content-Type: application/xml" -H "Cache-Control: no-store, no-cache, must-revalidate, max-age=0, post-check=0" -H "Connection: no-keepalive" -d "${xmlString2}" "${apiURL}/JSSResource/computers/udid/$udid")
+
+	if [ $res -eq 201 ]; then
+    	echo "Got 201! All done!"
+    	break;
+	else
+    	echo "Got $res :( Not done yet..."
+  	fi
+	sleep 10
+
+	if [ $n -eq 60 ];then
+		echo "Something whent wrong n hit $n"
+    	break;
+	fi
+
+	n=$[$n+1];
 
 done;
 
 if [ $res != 201 ]; then
+	echo "Error StoreOldPass not ready"
 	exit 1
 fi
 
+
 n=0;
-	
+sleep 20;
+
+
 while true
 do
 
@@ -224,23 +258,31 @@ do
     	echo "Got 200! All done!"
    		HTTP_BODY=$(echo $HTTP_RESPONSE | sed -e 's/HTTPSTATUS\:200//g')
     	TestPass=$(echo $HTTP_BODY | xpath "//extension_attribute[name=$extAttName2]" 2>&1 | awk -F'<value>|</value>' '{print $2}' | tr -d '\n')
-    	break
+    	break;
   	else
     	echo "Got $HTTP_STATUS :( Not done yet..."
   	fi
 sleep 10
 if [ $n -eq 60 ];then
-    break;
+	break;
 fi
 n=$[$n+1];
 
 done
 
 if [ $HTTP_STATUS != 200 ]; then
+	echo "Error StoreOldPass not ready"
 	exit 1
 fi
 
 TestPass=$(ReplacePasswordCharacters $TestPass)
+
+echo "TestPAss: $TestPass"
+echo "oldPAss: $oldPass"
+echo "N är lika med: $n"
+echo "RES är lika med: $res"
+echo "HTTP_STATUS är lika med: $HTTP_STATUS"
+
 
 ScriptLogging "Verifying the current password has been backed up"
 if [ "$TestPass" = "$oldPass" ];then
@@ -282,6 +324,7 @@ fi
 
 # Verify the new User Password
 CheckNewPassword (){
+sleep 10
 ScriptLogging "Verifying new password for $resetUser."
 passwdB=$(dscl /Local/Default -authonly $resetUser $newPass)
 
@@ -303,6 +346,7 @@ echo "Recording new password for $resetUser into LAPS."
 
 res=0;
 n=0;
+HTTP_STATUS=0;
 
 while [ $res != 201 ];do
 
@@ -321,6 +365,7 @@ n=$[$n+1];
 done;
 
 if [ $res != 201 ]; then
+	echo "Error CheckNewPAss not ready"
 	exit 1
 fi
 
@@ -335,7 +380,7 @@ do
     	echo "Got 200! All done!"
        	HTTP_BODY=$(echo $HTTP_RESPONSE | sed -e 's/HTTPSTATUS\:200//g')
     	LAPSpass=$(echo $HTTP_BODY | xpath "//extension_attribute[name=$extAttName]" 2>&1 | awk -F'<value>|</value>' '{print $2}' | tr -d '\n')
-    	break
+    	break;
   	else
     	echo "Got $HTTP_STATUS :( Not done yet..."
   	fi
@@ -346,6 +391,11 @@ fi
 sleep 10
 n=$[$n+1];
 done;
+
+if [ $HTTP_STATUS != 200 ]; then
+	echo "Error UpdateAPI not ready"
+	exit 1
+fi
 
 LAPSpass=$(ReplacePasswordCharacters $LAPSpass)
 
